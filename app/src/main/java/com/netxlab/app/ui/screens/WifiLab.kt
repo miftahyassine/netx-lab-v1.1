@@ -65,6 +65,7 @@ fun WifiLabScreen(vm: AppViewModel) {
         }
         when (tab) {
             0 -> ToolColumn {
+                WifiAccessCard()
                 Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
                     Button(onClick = { ensureAndScan() }, enabled = !busy) { Text(if (busy) "Scanning…" else "Scan Wi-Fi") }
                     InfoIcon("Wi-Fi scanning", "Android limits foreground apps to about four scans per two minutes and may return cached results. Hidden SSIDs show as <hidden>. Distance is a rough free-space estimate.")
@@ -202,5 +203,5 @@ private fun ConnectionTab(vm: AppViewModel) {
             appendLine("DNS: ${n.dns.joinToString()}"); appendLine("Interface: ${n.iface} MTU ${n.mtu}"); appendLine("Routes:"); n.routes.forEach { appendLine("  $it") }
         }
     }
-    ToolColumn { OutputBox(text, "Current connection") }
+    ToolColumn { if (w.ssid == null) WifiAccessCard(); OutputBox(text, "Current connection") }
 }

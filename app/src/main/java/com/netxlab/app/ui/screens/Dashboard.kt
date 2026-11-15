@@ -53,7 +53,7 @@ fun DashboardScreen(vm: AppViewModel, onNavigate: (String) -> Unit) {
                 else -> "Connected, no validated Internet (${n.transport})"
             })
             if (w?.connected == true) {
-                KeyValue("SSID", w.ssid ?: "Hidden by Android (permission needed)")
+                KeyValue("SSID", w.ssid ?: "Hidden by Android (see warning below)")
                 KeyValue("BSSID", w.bssid ?: "Hidden by Android")
                 KeyValue("Frequency", w.freq?.let { "$it MHz · ${WifiTools.bandOf(it)} · ch ${WifiTools.channelOf(it)}" })
                 KeyValue("Signal", w.rssi?.let { "$it dBm · ${WifiTools.qualityOf(it)}%" })
@@ -64,10 +64,8 @@ fun DashboardScreen(vm: AppViewModel, onNavigate: (String) -> Unit) {
             KeyValue("Gateway", n?.gateway)
             KeyValue("DNS", n?.dns?.joinToString(", ")?.ifEmpty { null })
             KeyValue("Interface / MTU", n?.iface?.let { "$it · MTU ${n?.mtu ?: "?"}" })
-            if (w?.connected == true && w.ssidHidden) {
-                Button(onClick = { launcher.launch(perms) }) { Text("Grant Wi-Fi details access") }
-            }
         }
+        if (wifi?.connected == true && wifi?.ssidHidden == true) WifiAccessCard(onChanged = { refresh() })
 
         SectionTitle("Quick actions")
         val actions = listOf(

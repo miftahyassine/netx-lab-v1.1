@@ -94,7 +94,9 @@ object WifiTools {
         val results = try { wm.scanResults.map { toAp(it) } } catch (e: SecurityException) {
             return@withContext ScanOutcome(emptyList(), false, !started, "Permission denied. Grant location / nearby devices access.")
         }
+        val blocked = if (results.isEmpty()) com.netxlab.app.ui.WifiAccess.problem(ctx) else null
         val note = when {
+            blocked != null -> blocked
             !started -> "Android refused a new scan (throttling: ~4 scans / 2 min in foreground, or scan disabled). Showing cached results from the system."
             !fresh -> "The scan did not complete in time; results may be cached or incomplete."
             else -> "Fresh scan completed. Android may still omit hidden SSIDs and some access points."

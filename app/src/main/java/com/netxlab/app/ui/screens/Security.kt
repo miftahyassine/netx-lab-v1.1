@@ -41,6 +41,7 @@ private fun WifiAudit(vm: AppViewModel) {
     fun run() { scope.launch { busy = true; val o = WifiTools.scan(ctx); aps = o.aps; note = o.note; busy = false } }
     val l = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { if (it.values.all { g -> g }) run() else note = "Permission denied." }
     ToolColumn {
+        WifiAccessCard()
         SectionTitle("Wireless security inspection", "This reads the security capabilities advertised by nearby access points. An encryption label alone does not prove a network is vulnerable or safe; it only shows what the AP advertises.")
         Button(enabled = !busy, onClick = { if (perms.all { ContextCompat.checkSelfPermission(ctx, it) == android.content.pm.PackageManager.PERMISSION_GRANTED }) run() else l.launch(perms) }) { Text(if (busy) "Scanning…" else "Inspect nearby networks") }
         if (note.isNotEmpty()) Text(note, style = MaterialTheme.typography.bodyMedium)

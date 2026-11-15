@@ -43,7 +43,8 @@ private fun layoutNodes(n: Int, r: Float): List<Offset> = List(n) { i ->
 @Composable
 fun TopologyScreen(vm: AppViewModel) {
     val ctx = LocalContext.current; val scope = rememberCoroutineScope(); val settings by vm.settings.collectAsState()
-    val devices = ScanStore.devices.sortedBy { IpCalc.parseV4(it.ip) }
+    val localNow = ScanStore.local ?: remember { NetInfo.localNet(ctx) }
+    val devices = ScanStore.devices.filter { it.ip != localNow.gateway }.sortedBy { IpCalc.parseV4(it.ip) }
     var scale by remember { mutableFloatStateOf(1f) }; var offset by remember { mutableStateOf(Offset.Zero) }
     var selected by remember { mutableStateOf<Device?>(null) }; var selGateway by remember { mutableStateOf(false) }
     var job by remember { mutableStateOf<Job?>(null) }; var err by remember { mutableStateOf<String?>(null) }
@@ -88,20 +89,24 @@ fun TopologyScreen(vm: AppViewModel) {
             val dash = PathEffect.dashPathEffect(floatArrayOf(10f, 8f))
             pts.forEach { p -> drawLine(c.outline, ctr, ctr + p * scale, 2f, pathEffect = dash) }
             drawCircle(c.primary.copy(alpha = 0.25f), 30f * scale, ctr); drawCircle(c.primary, 30f * scale, ctr, style = Stroke(4f))
-            drawText(tm, "Gateway", ctr + Offset(-22f, 36f * scale), labelStyle)
-            local.gateway?.let { drawText(tm, it, ctr + Offset(-30f, 48f * scale), labelStyle) }
+            fun label(text: String, center: Offset, below: Float) {
+                val l = tm.measure(text, labelStyle)
+                drawText(l, topLeft = Offset(center.x - l.size.width / 2f, center.y + below))
+            }
+            label("Gateway " + (local.gateway ?: ""), ctr, 34f * scale)
             devices.forEachIndexed { i, d ->
                 val q = ctr + pts[i] * scale
                 val sel = selected?.ip == d.ip
                 drawCircle(if (sel) c.tertiary else c.secondary.copy(alpha = 0.25f), 22f * scale, q)
                 drawCircle(if (sel) c.tertiary else c.secondary, 22f * scale, q, style = Stroke(4f))
-                drawText(tm, d.ip.substringAfterLast("."), q + Offset(-8f, -7f), labelStyle)
-                drawText(tm, d.host ?: d.ip, q + Offset(-24f, 26f * scale), labelStyle)
+                val name = if (d.ip == local.ip) "This phone" else (d.host ?: d.ip)
+                label(name, q, 26f * scale)
+                if (name != d.ip) label(d.ip, q, 26f * scale + 14f)
             }
         }
         NxCard(Modifier.padding(12.dp)) {
             val d = selected
-            if (selGateway) { KeyValue("Gateway", local.gateway); KeyValue("Your IP", local.ip?.let { "$it/${local.prefix}" }); KeyValue("DNS", local.dns.joinToString()) }
+            if (selGateway) { KeyValue("Gateway (router)", local.gateway); KeyValue("Your IP", local.ip?.let { "$it/${local.prefix}" }); KeyValue("DNS", local.dns.joinToString()) }
             else if (d != null) { KeyValue("IP", d.ip); KeyValue("Host", d.host); KeyValue("MAC", d.mac ?: "n/a"); KeyValue("Vendor", d.vendor); KeyValue("Response", "${d.ms} ms"); KeyValue("Open ports", d.openPorts.joinToString().ifEmpty { "none probed" }) }
             else Text("${devices.size} devices observed. Tap a node for details.", style = MaterialTheme.typography.bodyMedium)
             val svg = remember(devices, local) { toSvg(devices, local.gateway ?: "gateway") }
